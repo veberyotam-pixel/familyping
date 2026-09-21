@@ -1,0 +1,16 @@
+{
+  "name": "FamilyPing",
+  "short_name": "FamilyPing",
+  "description": "One button that calls your family.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FBF7F3",
+  "theme_color": "#E8503A",
+  "icons": [
+    { "src": "./icons/icon-64.png", "sizes": "64x64", "type": "image/png", "purpose": "any" },
+    { "src": "./icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "./icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

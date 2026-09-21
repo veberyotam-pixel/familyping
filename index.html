@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>FamilyPing</title>
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icons/icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="FamilyPing">
+<meta name="theme-color" content="#E8503A">
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- Shown in Safari before the app is on the Home Screen. -->
+  <section id="install" class="screen hidden">
+    <div class="hero">📣</div>
+    <h1>Add FamilyPing to your Home Screen</h1>
+    <p>iPhone will only let the app ring you once it lives on your Home Screen.</p>
+    <ol class="steps">
+      <li>Tap the <strong>Share</strong> button at the bottom of Safari <span class="ios-share">⬆️</span></li>
+      <li>Scroll down and tap <strong>Add to Home Screen</strong></li>
+      <li>Tap <strong>Add</strong>, then open FamilyPing from your Home Screen</li>
+    </ol>
+  </section>
+
+  <!-- Shown on Android phones: the real app rings even on silent, the web one cannot. -->
+  <section id="android" class="screen hidden">
+    <div class="hero">📣</div>
+    <h1>Get FamilyPing for Android</h1>
+    <p>The Android app rings even when your phone is on silent.</p>
+    <a class="primary" href="./FamilyPing.apk" download>Download the app</a>
+    <ol class="steps">
+      <li>Tap <strong>Download the app</strong>, then open the downloaded file.</li>
+      <li>If Android asks, allow installing from this source.</li>
+      <li>Tap <strong>Install</strong>, open FamilyPing, and type the family code.</li>
+    </ol>
+    <button id="android-web" class="text-btn">Use it in the browser instead</button>
+  </section>
+
+  <section id="loading" class="screen">
+    <div class="spinner"></div>
+  </section>
+
+  <!-- Onboarding -->
+  <section id="join" class="screen hidden">
+    <div class="hero">📣</div>
+    <h1>FamilyPing</h1>
+    <p>One button that calls everyone home.</p>
+
+    <label class="field">
+      <span>Your name</span>
+      <input id="nickname" type="text" maxlength="20" placeholder="Mom, Dad, Yotam...">
+    </label>
+
+    <div class="emoji-row" id="emoji-row"></div>
+
+    <label class="field">
+      <span>Family code</span>
+      <input id="code" type="text" maxlength="6" placeholder="ABC123" autocapitalize="characters" autocomplete="off">
+    </label>
+
+    <button id="join-btn" class="primary" disabled>Join the family</button>
+    <p id="join-error" class="error hidden"></p>
+    <p class="hint">Ask whoever set the family up for the six character code.</p>
+  </section>
+
+  <!-- Main screen -->
+  <section id="home" class="screen hidden">
+    <header>
+      <span id="family-name"></span>
+      <button id="settings-btn" class="icon-btn" aria-label="Settings">⚙️</button>
+    </header>
+
+    <div class="button-wrap">
+      <button id="call" class="call-button" aria-label="Call the family">
+        <span>CALL</span>
+      </button>
+      <p id="target-count" class="status"></p>
+    </div>
+
+    <ul id="members" class="members"></ul>
+  </section>
+
+  <!-- Settings -->
+  <section id="settings" class="screen hidden">
+    <header>
+      <button id="back-btn" class="icon-btn" aria-label="Back">←</button>
+      <span>Settings</span>
+    </header>
+
+    <div class="pad">
+      <h2>You</h2>
+      <label class="field">
+        <span>Your name</span>
+        <input id="set-nickname" type="text" maxlength="20">
+      </label>
+      <div class="emoji-row" id="set-emoji-row"></div>
+
+      <h2>Your ring</h2>
+      <p class="hint" id="sound-note"></p>
+      <div id="sound-list"></div>
+
+      <h2>Look</h2>
+      <div class="seg" id="theme-seg">
+        <button data-theme="light">Light</button>
+        <button data-theme="dark">Dark</button>
+        <button data-theme="auto">Auto</button>
+      </div>
+      <div class="accents" id="accents"></div>
+
+      <h2>Family</h2>
+      <p class="hint">Invite code</p>
+      <div class="code-box" id="family-code"></div>
+
+      <button id="leave-btn" class="danger">Leave this family</button>
+    </div>
+  </section>
+
+  <!-- Incoming call -->
+  <section id="incoming" class="screen hidden">
+    <div class="pulse"><div></div><div></div><div></div><span>📣</span></div>
+    <h1 id="caller"></h1>
+    <p>is calling you</p>
+    <button id="coming-btn" class="primary green">Coming</button>
+    <button id="busy-btn" class="secondary">Busy</button>
+    <button id="stop-btn" class="text-btn">Stop the ringing</button>
+  </section>
+
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
