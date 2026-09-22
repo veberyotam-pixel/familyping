@@ -14,6 +14,12 @@ const ACCENTS = {
   rose:   ['#C2306C','#F37BA9'],
 };
 
+// A call rings this long, unless it is answered sooner.
+const CALL_SECONDS = 20;
+// A ping older than this never rings - it is a missed call. A little over the
+// call, so a phone clock a few seconds off still rings.
+const FRESH_SECONDS = 30;
+
 const S = {
   family: null,
   members: [],
@@ -77,7 +83,7 @@ function startRing() {
   // notification itself still fired, so the phone has already made a noise.
   S.audio.play().catch(() => {});
   if (navigator.vibrate) navigator.vibrate([400, 200, 400, 200, 600]);
-  S.ringTimer = setTimeout(stopRing, 15000);
+  S.ringTimer = setTimeout(endCall, CALL_SECONDS * 1000);
 }
 
 function stopRing() {
@@ -88,6 +94,26 @@ function stopRing() {
     S.audio = null;
   }
   if (navigator.vibrate) navigator.vibrate(0);
+}
+
+/** The call is over here - answered, stopped, or its 20 seconds are up. */
+function endCall() {
+  stopRing();
+  currentPingId = null;
+  if (!$('incoming').classList.contains('hidden')) {
+    renderMembers();
+    show('home');
+  }
+}
+
+/** First answer wins, like the apps: a second one for the same call is ignored. */
+async function sendAnswer(pingId, kind) {
+  if (!S.me) return;
+  const { error } = await db.from('ping_responses').upsert(
+    { ping_id: pingId, member_id: S.me.id, response: kind },
+    { ignoreDuplicates: true },
+  );
+  if (error) alert('Could not send your answer. Check the internet.');
 }
 
 function previewSound(key) {
@@ -167,10 +193,8 @@ async function setupPush() {
 navigator.serviceWorker?.addEventListener('message', (event) => {
   const d = event.data || {};
   if (d.kind === 'answer' && d.ping_id && d.answer) {
-    stopRing();
-    db.from('ping_responses')
-      .upsert({ ping_id: d.ping_id, member_id: S.me?.id, response: d.answer })
-      .then(() => {});
+    endCall();
+    sendAnswer(d.ping_id, d.answer);
   }
 });
 
@@ -178,25 +202,61 @@ navigator.serviceWorker?.addEventListener('message', (event) => {
 
 let currentPingId = null;
 
+// Someone else's call while it lasts. The home screen shows who is calling to the
+// whole family, not only to the people being rung.
+let liveCall = null;
+
+function showLiveCall(ping, sender) {
+  liveCall = {
+    id: ping.id,
+    targets: ping.target_ids || [],
+    name: sender?.nickname || 'Someone',
+    emoji: sender?.emoji || '📣',
+    until: new Date(ping.created_at).getTime() + CALL_SECONDS * 1000,
+  };
+  renderMembers();
+  setTimeout(renderMembers, Math.max(0, liveCall.until - Date.now()) + 100);
+}
+
+/** Live until everyone called has answered, or its 20 seconds are up. */
+function callIsLive() {
+  if (!liveCall || Date.now() >= liveCall.until) return false;
+  return !liveCall.targets.every((id) => S.replies.get(id)?.ping_id === liveCall.id);
+}
+
 function subscribe() {
   db.channel('familyping-web')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pings' }, (p) => {
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pings' }, async (p) => {
       const ping = p.new;
       if (ping.sender_id === S.me?.id) return;
-      if (!(ping.target_ids || []).includes(S.me?.id)) return;
-      if ((Date.now() - new Date(ping.created_at).getTime()) / 1000 > 60) return;
+      // A ping that arrived late is a missed call, not a ring.
+      if ((Date.now() - new Date(ping.created_at).getTime()) / 1000 > FRESH_SECONDS) return;
 
-      currentPingId = ping.id;
+      // Someone who only just joined may not be in the list yet.
+      if (!S.members.some((m) => m.id === ping.sender_id)) await loadAll();
       const sender = S.members.find((m) => m.id === ping.sender_id);
-      $('caller').textContent = sender ? sender.nickname : 'Someone';
       S.replies.clear();
+      showLiveCall(ping, sender);
+
+      if (!(ping.target_ids || []).includes(S.me?.id)) return;
+      currentPingId = ping.id;
+      $('caller').textContent = sender ? sender.nickname : 'Someone';
+      $('caller-emoji').textContent = sender?.emoji || '📣';
       show('incoming');
       startRing();
     })
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'ping_responses' }, (p) => {
-      S.replies.set(p.new.member_id, p.new);
+    // All events, like the apps: an answer can also be updated.
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'ping_responses' }, (p) => {
+      const r = p.new;
+      if (!r || !r.member_id) return;
+      S.replies.set(r.member_id, r);
       renderMembers();
-      setTimeout(() => { S.replies.delete(p.new.member_id); renderMembers(); }, 60000);
+      // Answers disappear after a minute, unless a newer one replaced this one.
+      setTimeout(() => {
+        if (S.replies.get(r.member_id) !== r) return;
+        S.replies.delete(r.member_id);
+        renderMembers();
+      }, 60000);
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'members' }, async () => {
       await loadAll();
@@ -240,8 +300,9 @@ function renderMembers() {
   }
 
   const n = targets().length;
-  $('target-count').textContent =
-    n === 0 ? 'Nobody to call yet' : n === 1 ? 'Calls 1 person' : `Calls ${n} people`;
+  $('target-count').textContent = callIsLive()
+    ? `${liveCall.emoji} ${liveCall.name} is calling...`
+    : n === 0 ? 'Nobody to call yet' : n === 1 ? 'Calls 1 person' : `Calls ${n} people`;
   $('call').disabled = n === 0;
   $('family-name').textContent = S.family?.name || 'Family';
 }
@@ -326,14 +387,9 @@ async function sendPing() {
 }
 
 async function answer(kind) {
-  stopRing();
-  if (currentPingId && S.me) {
-    await db.from('ping_responses').upsert({
-      ping_id: currentPingId, member_id: S.me.id, response: kind,
-    });
-  }
-  currentPingId = null;
-  show('home');
+  const pingId = currentPingId;
+  endCall();
+  if (pingId) await sendAnswer(pingId, kind);
 }
 
 // -- wiring ------------------------------------------------------------------
@@ -344,7 +400,7 @@ function wireUp() {
   $('call').onclick = sendPing;
   $('coming-btn').onclick = () => answer('coming');
   $('busy-btn').onclick = () => answer('busy');
-  $('stop-btn').onclick = () => { stopRing(); currentPingId = null; show('home'); };
+  $('stop-btn').onclick = endCall;
   $('settings-btn').onclick = () => { renderSettings(); show('settings'); };
   $('back-btn').onclick = () => { renderMembers(); show('home'); };
 
@@ -427,9 +483,7 @@ async function start() {
   const a = params.get('answer');
   const pid = params.get('ping');
   if (a && pid) {
-    await db.from('ping_responses').upsert({
-      ping_id: pid, member_id: S.me.id, response: a,
-    });
+    await sendAnswer(pid, a);
     history.replaceState({}, '', location.pathname);
   }
 }

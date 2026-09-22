@@ -20,10 +20,11 @@ self.addEventListener('push', (event) => {
 
   if (data.kind !== 'ping') return;
 
-  // A push that arrives late is a missed call, not a ring.
+  // A push that arrives late is a missed call, not a ring. 30 s: a little over the
+  // 20 s call, so a phone clock a few seconds off still rings.
   if (data.sent_at) {
     const age = (Date.now() - new Date(data.sent_at).getTime()) / 1000;
-    if (age > 60) {
+    if (age > 30) {
       event.waitUntil(self.registration.showNotification('Missed call', {
         body: (data.sender_name || 'Someone') + ' called you',
         icon: './icons/icon-192.png',
@@ -34,7 +35,9 @@ self.addEventListener('push', (event) => {
     }
   }
 
-  const title = (data.sender_name || 'Someone') + ' is calling you';
+  // Who is calling, with their face - the same as the Android call screen.
+  const who = (data.sender_emoji ? data.sender_emoji + ' ' : '') + (data.sender_name || 'Someone');
+  const title = who + ' is calling you';
 
   event.waitUntil(
     self.registration.showNotification(title, {
