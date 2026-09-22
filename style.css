@@ -171,6 +171,8 @@ a.primary { display: block; text-align: center; text-decoration: none; box-sizin
 .sound-row label { flex: 1; font-size: 17px; font-weight: 600; }
 .sound-row button { background: none; border: 0; font-size: 24px; cursor: pointer; padding: 8px; }
 
+.version { text-align: center; margin-top: 26px; }
+
 .code-box {
   text-align: center; font-size: 40px; font-weight: 900; letter-spacing: 9px;
   color: var(--accent); padding: 22px; border: 2px solid var(--accent);

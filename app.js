@@ -241,7 +241,9 @@ function subscribe() {
       if (!(ping.target_ids || []).includes(S.me?.id)) return;
       currentPingId = ping.id;
       $('caller').textContent = sender ? sender.nickname : 'Someone';
-      $('caller-emoji').textContent = sender?.emoji || '📣';
+      // Missing while a phone still shows the previous, cached page: it keeps 📣.
+      const face = $('caller-emoji');
+      if (face) face.textContent = sender?.emoji || '📣';
       show('incoming');
       startRing();
     })

@@ -10,7 +10,9 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="FamilyPing">
 <meta name="theme-color" content="#E8503A">
-<link rel="stylesheet" href="./style.css">
+<!-- When the web app changes, bump the ?v= on style.css, app.js and the APK link,
+     and the version at the bottom of Settings, so phones cannot mix old and new files. -->
+<link rel="stylesheet" href="./style.css?v=1.2.0">
 </head>
 <body>
 
@@ -33,7 +35,7 @@
     <div class="hero">📣</div>
     <h1>Get FamilyPing for Android</h1>
     <p>The Android app rings even when your phone is on silent.</p>
-    <a class="primary" href="./FamilyPing.apk" download>Download the app</a>
+    <a class="primary" href="./FamilyPing.apk?v=1.2.0" download="FamilyPing.apk">Download the app</a>
     <ol class="steps">
       <li>Tap <strong>Download the app</strong>, then open the downloaded file.</li>
       <li>If Android asks, allow installing from this source.</li>
@@ -118,6 +120,7 @@
       <div class="code-box" id="family-code"></div>
 
       <button id="leave-btn" class="danger">Leave this family</button>
+      <p class="hint version">FamilyPing 1.2.0</p>
     </div>
   </section>
 
@@ -133,6 +136,6 @@
 
 </div>
 
-<script type="module" src="./app.js"></script>
+<script type="module" src="./app.js?v=1.2.0"></script>
 </body>
 </html>
